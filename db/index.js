@@ -17,8 +17,8 @@ async function createUser({
 }) {
   try {
     const { rows: [ user ] } = await client.query(`
-      INSERT INTO users(username, password, name) 
-      VALUES($1, $2, $3) 
+      INSERT INTO users(username, password, name,location) 
+      VALUES($1, $2, $3, $4) 
       ON CONFLICT (username) DO NOTHING 
       RETURNING *;
     `, [username, password, name, location]);
@@ -123,10 +123,10 @@ async function createPost({
 }) {
   try {
     const { rows: [ post ] } = await client.query(`
-      INSERT INTO posts("authorId", title, content) 
-      VALUES($1, $2, $3)
+      INSERT INTO posts("authorId", title, content,tags) 
+      VALUES($1, $2, $3, $4)
       RETURNING *;
-    `, [authorId, title, content]);
+    `, [authorId, title, content, tags]);
 
     const tagList = await createTags(tags);
 
@@ -277,13 +277,34 @@ async function getPostsByTagName(tagName) {
   }
 } 
 
-/**
- * TAG Methods
- */
+async function deletePostFromDB(postId){
+  try{
+    const post= await getPostById(postId)
+    if (post){
+      const deletedPost= await client.query(
+        `
+      DELETE FROM posts
+      WHERE id= $1
+      RETURNING *
+      `,
+      [postId]
+      );
+    if(deletedPost.rows [0]){
+      return deletedPost.rows [0];
+    }else{
+      throw{
+        name: "Delete error",
+        message: `An error occurred when trying to delete the post with the postId: ${postId}`
+      }
+    }
+  }
+}
 
 async function createTags(tagList) {
   if (tagList.length === 0) {
     return;
+  } else{
+
   }
 
   const valuesStringInsert = tagList.map(
@@ -371,4 +392,5 @@ module.exports = {
   getAllTags,
   createPostTag,
   addTagsToPost
+}
 }

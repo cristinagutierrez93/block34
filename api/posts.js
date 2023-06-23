@@ -13,9 +13,10 @@ const {
 postsRouter.get('/', async (req, res, next) => {
   try {
     const allPosts = await getAllPosts();
-
+  
     const posts = allPosts.filter(post => {
       // the post is active, doesn't matter who it belongs to
+      
       if (post.active) {
         return true;
       }
@@ -38,14 +39,17 @@ postsRouter.get('/', async (req, res, next) => {
 });
 
 postsRouter.post('/', requireUser, async (req, res, next) => {
-  const { title, content = "" } = req.body;
+  const { title, content = "", tags= ""}= req.body;
+  const tagArr= tags.trim().split(/\s+/);
 
-  const postData = {};
-
+  const postData = {
+    tags: tagsArr
+  };
   try {
     postData.authorId = req.user.id;
     postData.title = title;
     postData.content = content;
+    
 
     const post = await createPost(postData);
 
@@ -98,7 +102,24 @@ postsRouter.patch('/:postId', requireUser, async (req, res, next) => {
 });
 
 postsRouter.delete('/:postId', requireUser, async (req, res, next) => {
+
+  const {postId}= req.params
+
+  if(!postId){
+    res.send('You need to send along a post Id to this route')
+  }else
   res.send({ message: 'under construction' });
+
+  const deletedPost= await deletePostFromDB(postId)
+
+  if (deletedPost){
+    res.send(deletedPost)
+  }else{
+    next({
+      name: "ErrorWithDeletingPost",
+      message: `An error occurred when attempting to delete the post with an Id of: $`
+    })
+  }
 });
 
 module.exports = postsRouter;
